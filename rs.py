@@ -52,14 +52,14 @@ class RSCoder(object):
         # g(x) = (x-α^1)(x-α^2)...(x-α^(n-k))
         # α is 3, a generator for GF(2^8)
         g = Polynomial((GF256int(1),))
-        for alpha in xrange(1,n-k+1):
+        for alpha in range(1,n-k+1):
             p = Polynomial((GF256int(1), GF256int(3)**alpha))
             g = g * p
         self.g = g
 
         # h(x) = (x-α^(n-k+1))...(x-α^n)
         h = Polynomial((GF256int(1),))
-        for alpha in xrange(n-k+1,n+1):
+        for alpha in range(n-k+1,n+1):
             p = Polynomial((GF256int(1), GF256int(3)**alpha))
             h = h * p
         self.h = h
@@ -72,7 +72,7 @@ class RSCoder(object):
     def encode(self, message, poly=False):
         """Encode a given string with reed-solomon encoding. Returns a byte
         string with the k message bytes and n-k parity bytes at the end.
-        
+
         If a message is < k bytes long, it is assumed to be padded at the front
         with null bytes.
 
@@ -114,9 +114,6 @@ class RSCoder(object):
         code divides g
         returns True/False
         """
-        n = self.n
-        k = self.k
-        h = self.h
         g = self.g
 
         c = Polynomial(GF256int(ord(x)) for x in code)
@@ -172,7 +169,7 @@ class RSCoder(object):
 
         # Put the error and locations together to form the error polynomial
         Elist = []
-        for i in xrange(255):
+        for i in range(255):
             if i in j:
                 Elist.append(Y[j.index(i)])
             else:
@@ -204,7 +201,7 @@ class RSCoder(object):
         # s[l] is the received codeword evaluated at α^l for 1 <= l <= s
         # α in this implementation is 3
         s = [GF256int(0)] # s[0] is 0 (coefficient of z^0)
-        for l in xrange(1, n-k+1):
+        for l in range(1, n-k+1):
             s.append( r.evaluate( GF256int(3)**l ) )
 
         # Now build a polynomial out of all our s[l] values
@@ -255,16 +252,16 @@ class RSCoder(object):
         ONE = Polynomial(z0=GF256int(1))
         ZERO = Polynomial(z0=GF256int(0))
         Z = Polynomial(z1=GF256int(1))
-        
+
         # Iteratively compute the polynomials 2s times. The last ones will be
         # correct
-        for l in xrange(0, n-k):
+        for l in range(0, n-k):
             # Goal for each iteration: Compute sigma[l+1] and omega[l+1] such that
             # (1 + s)*sigma[l] == omega[l] in mod z^(l+1)
 
             # For this particular loop iteration, we have sigma[l] and omega[l],
             # and are computing sigma[l+1] and omega[l+1]
-            
+
             # First find Delta, the non-zero coefficient of z^(l+1) in
             # (1 + s) * sigma[l]
             # This delta is valid for l (this iteration) only
@@ -329,7 +326,7 @@ class RSCoder(object):
         X = []
         j = []
         p = GF256int(3)
-        for l in xrange(1,256):
+        for l in range(1,256):
             # These evaluations could be more efficient, but oh well
             if sigma.evaluate( p**l ) == 0:
                 X.append( p**(-l) )
@@ -354,7 +351,7 @@ class RSCoder(object):
 
             # Compute the sequence product and multiply its inverse in
             prod = GF256int(1)
-            for ji in xrange(s):
+            for ji in range(s):
                 if ji == l:
                     continue
                 if ji < len(X):
@@ -382,5 +379,3 @@ if __name__ == "__main__":
         if not block: break
         code = method(block)
         sys.stdout.write(code)
-
-

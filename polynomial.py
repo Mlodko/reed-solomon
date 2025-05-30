@@ -1,13 +1,13 @@
 # Copyright (c) 2010 Andrew Brown <brownan@cs.duke.edu, brownan@gmail.com>
 # See LICENSE.txt for license terms
 
-from StringIO import StringIO
+from io import StringIO
 
 class Polynomial(object):
     """Completely general polynomial class.
-    
+
     Polynomial objects are immutable.
-    
+
     Implementation note: while this class is mostly agnostic to the type of
     coefficients used (as long as they support the usual mathematical
     operations), the Polynomial class still assumes the additive identity and
@@ -32,7 +32,7 @@ class Polynomial(object):
         >>> print Polynomial(x32=5, x64=8)
         8x^64 + 5x^32
 
-        >>> print Polynomial(x5=5, x9=4, x0=2) 
+        >>> print Polynomial(x5=5, x9=4, x0=2)
         4x^9 + 5x^5 + 2
         """
         if coefficients and sparse:
@@ -50,14 +50,13 @@ class Polynomial(object):
             self.coefficients = tuple(c)
         elif sparse:
             # Polynomial(x32=...)
-            powers = sparse.keys()
-            powers.sort(reverse=1)
+            powers = sorted(sparse.keys(), reverse=True)
             # Not catching possible exceptions from the following line, let
             # them bubble up.
             highest = int(powers[0][1:])
             coefficients = [0] * (highest+1)
 
-            for power, coeff in sparse.iteritems():
+            for power, coeff in sparse.items():
                 power = int(power[1:])
                 coefficients[highest - power] = coeff
 
@@ -88,7 +87,7 @@ class Polynomial(object):
         return self.__class__(-x for x in self.coefficients)
     def __sub__(self, other):
         return self + -other
-            
+
     def __mul__(self, other):
         terms = [0] * (len(self) + len(other))
 
@@ -106,7 +105,7 @@ class Polynomial(object):
     def __mod__(self, other):
         return divmod(self, other)[1]
 
-    def __divmod__(dividend, divisor):
+    def __divmod__(self, divisor):
         """Implements polynomial long-division recursively. I know this is
         horribly inefficient, no need to rub it in. I know it can even throw
         recursion depth errors on some versions of Python.
@@ -115,13 +114,13 @@ class Polynomial(object):
         memory of how polynomial long division works. It's straightforward and
         doesn't do anything fancy. There's no magic here.
         """
-        class_ = dividend.__class__
+        class_ = self.__class__
 
         # See how many times the highest order term
         # of the divisor can go into the highest order term of the dividend
 
-        dividend_power = dividend.degree()
-        dividend_coefficient = dividend.coefficients[0]
+        dividend_power = self.degree()
+        dividend_coefficient = self.coefficients[0]
 
         divisor_power = divisor.degree()
         divisor_coefficient = divisor.coefficients[0]
@@ -130,14 +129,14 @@ class Polynomial(object):
         if quotient_power < 0:
             # Doesn't divide at all, return 0 for the quotient and the entire
             # dividend as the remainder
-            return class_((0,)), dividend
+            return class_((0,)), self
 
         # Compute how many times the highest order term in the divisor goes
         # into the dividend
         quotient_coefficient = dividend_coefficient / divisor_coefficient
         quotient = class_( (quotient_coefficient,) + (0,) * quotient_power )
 
-        remander = dividend - quotient * divisor
+        remander = self - quotient * divisor
 
         if remander.coefficients == (0,):
             # Goes in evenly with no remainder, we're done

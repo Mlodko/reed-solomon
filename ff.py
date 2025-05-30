@@ -64,26 +64,26 @@ class GF256int(int):
             GF256int.cache[int(value)] = newval
             return newval
 
-    def __add__(a, b):
+    def __add__(self, b):
         "Addition in GF(2^8) is the xor of the two"
-        return GF256int(a ^ b)
+        return GF256int(self ^ b)
     __sub__ = __add__
     __radd__ = __add__
     __rsub__ = __add__
     def __neg__(self):
         return self
-    
-    def __mul__(a, b):
+
+    def __mul__(self, b):
         "Multiplication in GF(2^8)"
-        if a == 0 or b == 0:
+        if self == 0 or b == 0:
             return GF256int(0)
-        x = GF256int.logtable[a]
+        x = GF256int.logtable[self]
         y = GF256int.logtable[b]
         z = (x + y) % 255
         return GF256int(GF256int.exptable[z])
     __rmul__ = __mul__
 
-    def __pow__(self, power):
+    def __pow__(self, power): #type: ignore
         if isinstance(power, GF256int):
             raise TypeError("Raising a Field element to another Field element is not defined. power must be a regular integer")
         x = GF256int.logtable[self]
@@ -91,7 +91,13 @@ class GF256int(int):
         return GF256int(GF256int.exptable[z])
 
     def inverse(self):
-        e = GF256int.logtable[self]
+        if self == 0:
+            raise ZeroDivisionError("Cannot find the inverse of 0")
+        if self not in GF256int.logtable:
+            raise ValueError(f"Element {self} not found in logtable")
+        e= GF256int.logtable[self]
+        if e is None:
+            raise ValueError(f"Element {self} not found in logtable")
         return GF256int(GF256int.exptable[255 - e])
 
     def __div__(self, other):
@@ -122,4 +128,3 @@ class GF256int(int):
             if p & 0x100: p = p ^ 0x11b
 
         return GF256int(r)
-        
