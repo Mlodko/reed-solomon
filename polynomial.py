@@ -133,7 +133,7 @@ class Polynomial(object):
 
         # Compute how many times the highest order term in the divisor goes
         # into the dividend
-        quotient_coefficient = dividend_coefficient / divisor_coefficient
+        quotient_coefficient = dividend_coefficient // divisor_coefficient
         quotient = class_( (quotient_coefficient,) + (0,) * quotient_power )
 
         remander = self - quotient * divisor

@@ -364,18 +364,26 @@ class RSCoder(object):
             Y.append(Yl)
         return Y
 
-if __name__ == "__main__":
-    import sys
-    coder = RSCoder(255,223)
-    if "-d" in sys.argv:
-        method = coder.decode
-        blocksize = 255
-    else:
-        method = coder.encode
-        blocksize = 223
+def binary_format(data, bytes_per_line=16):
+    # Convert each character to its integer value directly
+    bytes_array = [ord(c) for c in data]
+    binary_strings = [format(byte, '02X') for byte in bytes_array]
 
-    while True:
-        block = sys.stdin.read(blocksize)
-        if not block: break
-        code = method(block)
-        sys.stdout.write(code)
+    # Organize into rows of bytes_per_line
+    rows = []
+    for i in range(0, len(binary_strings), bytes_per_line):
+        row = binary_strings[i:i+bytes_per_line]
+        rows.append(' '.join(row))
+
+    return '\n'.join(rows)
+
+
+if __name__ == "__main__":
+    coder = RSCoder(255,223)
+    input = input("Enter a message to be encoded: ")
+    print(f"Unencoded message:\n\tBinary representation: \n{binary_format(input)}")
+    print("\n=========================================\n")
+    encoded = coder.encode(input)
+    print(f"Encoded message:\n\tBinary representation: \n{binary_format(encoded)}")
+    print("\n=========================================\n")
+    print(f"Decoded message:\n\tBinary representation: \n{binary_format(coder.decode(encoded))}")
