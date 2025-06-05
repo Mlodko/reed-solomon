@@ -116,7 +116,7 @@ class RSCoder(object):
         """
         g = self.g
 
-        c = Polynomial(GF256int(ord(x)) for x in code)
+        c = Polynomial(GF256int(x) for x in code)
 
         # This works too, but takes longer. Both checks are just as valid.
         #return (c*h)%gtimesh == Polynomial(x0=0)
@@ -147,7 +147,7 @@ class RSCoder(object):
                 return r[:-(n-k)].lstrip("\0")
 
         # Turn r into a polynomial
-        r = Polynomial(GF256int(ord(x)) for x in r)
+        r = Polynomial(GF256int(x) for x in r)
 
         # Compute the syndromes:
         sz = self._syndromes(r)

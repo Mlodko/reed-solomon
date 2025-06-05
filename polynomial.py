@@ -2,6 +2,9 @@
 # See LICENSE.txt for license terms
 
 from io import StringIO
+import sys
+
+sys.setrecursionlimit(1000000000)
 
 class Polynomial(object):
     """Completely general polynomial class.
@@ -106,46 +109,71 @@ class Polynomial(object):
         return divmod(self, other)[1]
 
     def __divmod__(self, divisor):
-        """Implements polynomial long-division recursively. I know this is
-        horribly inefficient, no need to rub it in. I know it can even throw
-        recursion depth errors on some versions of Python.
-
-        However, not being a math person myself, I implemented this from my
-        memory of how polynomial long division works. It's straightforward and
-        doesn't do anything fancy. There's no magic here.
-        """
+        """Optimized polynomial long-division implementation that works with Galois Fields."""
         class_ = self.__class__
 
-        # See how many times the highest order term
-        # of the divisor can go into the highest order term of the dividend
+        # Quick handling of special cases
+        if divisor.coefficients == (0,):
+            raise ZeroDivisionError("Polynomial division by zero")
 
-        dividend_power = self.degree()
-        dividend_coefficient = self.coefficients[0]
-
-        divisor_power = divisor.degree()
-        divisor_coefficient = divisor.coefficients[0]
-
-        quotient_power = dividend_power - divisor_power
-        if quotient_power < 0:
-            # Doesn't divide at all, return 0 for the quotient and the entire
-            # dividend as the remainder
+        # If the divisor's degree is higher than the dividend, the quotient is 0
+        # and the remainder is the dividend
+        if divisor.degree() > self.degree():
             return class_((0,)), self
 
-        # Compute how many times the highest order term in the divisor goes
-        # into the dividend
-        quotient_coefficient = dividend_coefficient // divisor_coefficient
-        quotient = class_( (quotient_coefficient,) + (0,) * quotient_power )
+        # Initialize with coefficient lists for speed
+        dividend_coeffs = list(self.coefficients)
+        divisor_coeffs = list(divisor.coefficients)
 
-        remander = self - quotient * divisor
+        # Normalize the divisor leading coefficient for faster operations
+        divisor_lc = divisor_coeffs[0]
 
-        if remander.coefficients == (0,):
-            # Goes in evenly with no remainder, we're done
-            return quotient, remander
+        # Prepare result arrays
+        quotient_coeffs = [0] * (len(dividend_coeffs) - len(divisor_coeffs) + 1)
+        remainder_coeffs = list(dividend_coeffs)  # Copy the dividend
 
-        # There was a remainder, see how many times the remainder goes into the
-        # divisor
-        morequotient, remander = divmod(remander, divisor)
-        return quotient + morequotient, remander
+        # Compute the quotient and remainder in one pass
+        for i in range(len(quotient_coeffs)):
+            # Only compute if the coefficient is non-zero
+            if remainder_coeffs[i] != 0:
+                # Compute the quotient coefficient
+                quotient_coeffs[i] = remainder_coeffs[i]
+                if hasattr(divisor_lc, "inverse"):
+                    # For Galois Field elements
+                    if divisor_lc != 1:  # Skip multiplication if divisor_lc is 1
+                        quotient_coeffs[i] = quotient_coeffs[i] * divisor_lc.inverse()
+                else:
+                    # For regular integers
+                    quotient_coeffs[i] = quotient_coeffs[i] // divisor_lc
+
+                # If this quotient coefficient is zero, skip the inner loop
+                if quotient_coeffs[i] == 0:
+                    continue
+
+                # Update the remainder - subtract (quotient_coeff * divisor)
+                for j in range(1, len(divisor_coeffs)):
+                    pos = i + j
+                    if pos < len(remainder_coeffs):
+                        factor = quotient_coeffs[i] * divisor_coeffs[j]
+                        if factor != 0:  # Skip if factor is zero
+                            remainder_coeffs[pos] -= factor
+
+        # Remove leading zeros from quotient
+        while len(quotient_coeffs) > 1 and quotient_coeffs[0] == 0:
+            quotient_coeffs.pop(0)
+
+        # Extract remainder (only the coefficients after the quotient)
+        remainder_coeffs = remainder_coeffs[len(quotient_coeffs):]
+
+        # Remove leading zeros from remainder
+        while len(remainder_coeffs) > 1 and remainder_coeffs[0] == 0:
+            remainder_coeffs.pop(0)
+
+        # If remainder is empty, use [0]
+        if not remainder_coeffs:
+            remainder_coeffs = [0]
+
+        return class_(quotient_coeffs), class_(remainder_coeffs)
 
     def __eq__(self, other):
         return self.coefficients == other.coefficients
